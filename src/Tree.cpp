@@ -83,7 +83,7 @@ void Tree::print_verbose() {
 
   int kLeafHdrOffset = STRUCT_OFFSET(LeafPage, hdr);
   int kInternalHdrOffset = STRUCT_OFFSET(InternalPage, hdr);
-  static_assert(kLeafHdrOffset == kInternalHdrOffset, "XXX");
+  // static_assert(kLeafHdrOffset == kInternalHdrOffset, "XXX");
 
   if (dsm->getMyNodeID() == 0) {
     std::cout << "Header size: " << sizeof(Header) << std::endl;

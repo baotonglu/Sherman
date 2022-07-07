@@ -57,7 +57,7 @@ struct Region {
 };
 
 //// Resource.cpp
-bool createContext(RdmaContext *context, uint8_t port = 1, int gidIndex = 1,
+bool createContext(RdmaContext *context, uint8_t port = 1, int gidIndex = 0,
                    uint8_t devIndex = 0);
 bool destoryContext(RdmaContext *context);
 
