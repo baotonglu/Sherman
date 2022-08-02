@@ -922,7 +922,7 @@ int Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
 
     this->leaf_page_store(page->hdr.sibling_ptr, k, v, root, level, cxt,
                           coro_id);
-    // TODO: either 1 or 2 is possible 
+    // TODO: Fix this one
     return 1;
   }
   assert(k >= page->hdr.lowest);
@@ -949,6 +949,8 @@ int Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
 
   assert(cnt != kLeafCardinality);
 
+  int ret = (update_addr == nullptr) ? 2 : 1;
+
   if (update_addr == nullptr) { // insert new item
     if (empty_index == -1) {
       printf("%d cnt\n", cnt);
@@ -966,7 +968,6 @@ int Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
     cnt++;
   }
 
-  int ret = (update_addr == nullptr) ? 2 : 1;
   bool need_split = cnt == kLeafCardinality;
   if (!need_split) {
     assert(update_addr);
