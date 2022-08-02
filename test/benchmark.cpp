@@ -86,6 +86,7 @@ RequstGen *coro_func(int coro_id, DSM *dsm, int id) {
 
 Timer bench_timer;
 std::atomic<int64_t> warmup_cnt{0};
+std::atomic<uint64_t> total_items{0};
 std::atomic_bool ready{false};
 void thread_run(int id) {
 
@@ -106,7 +107,8 @@ void thread_run(int id) {
   uint64_t end_warm_key = kWarmRatio * kKeySpace;
   for (uint64_t i = 1; i < end_warm_key; ++i) {
     if (i % all_thread == my_id) {
-      tree->insert(to_key(i), i * 2);
+      auto flag = tree->insert(to_key(i), i * 2);
+      if(flag) total_items.fetch_add(1);
     }
   }
 
@@ -120,6 +122,7 @@ void thread_run(int id) {
 
     uint64_t ns = bench_timer.end();
     printf("warmup time %lds\n", ns / 1000 / 1000 / 1000);
+    printf("total accessed items = %lu\n", total_items.load());
 
     tree->index_cache_statistics();
     tree->clear_statistics();
@@ -260,7 +263,8 @@ int main(int argc, char *argv[]) {
 #ifndef BENCH_LOCK
   if (dsm->getMyNodeID() == 0) {
     for (uint64_t i = 1; i < 1024000; ++i) {
-      tree->insert(to_key(i), i * 2);
+      auto flag = tree->insert(to_key(i), i * 2);
+      if(flag) total_items.fetch_add(1);
     }
   }
 #endif

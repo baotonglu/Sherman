@@ -44,7 +44,7 @@ class Tree {
 public:
   Tree(DSM *dsm, uint16_t tree_id = 0);
 
-  void insert(const Key &k, const Value &v, CoroContext *cxt = nullptr,
+  bool insert(const Key &k, const Value &v, CoroContext *cxt = nullptr,
               int coro_id = 0);
   bool search(const Key &k, Value &v, CoroContext *cxt = nullptr,
               int coro_id = 0);
@@ -116,7 +116,7 @@ private:
   void internal_page_store(GlobalAddress page_addr, const Key &k,
                            GlobalAddress value, GlobalAddress root, int level,
                            CoroContext *cxt, int coro_id);
-  bool leaf_page_store(GlobalAddress page_addr, const Key &k, const Value &v,
+  int leaf_page_store(GlobalAddress page_addr, const Key &k, const Value &v,
                        GlobalAddress root, int level, CoroContext *cxt,
                        int coro_id, bool from_cache = false);
   void leaf_page_del(GlobalAddress page_addr, const Key &k, int level,

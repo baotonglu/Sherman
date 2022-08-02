@@ -373,7 +373,8 @@ next:
   internal_page_store(p, k, v, root, level, cxt, coro_id);
 }
 
-void Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
+// false means update, true means real insert
+bool Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
   assert(dsm->is_register());
 
   before_operation(cxt, coro_id);
@@ -396,14 +397,14 @@ void Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
     auto entry = index_cache->search_from_cache(k, &cache_addr);
     if (entry) { // cache hit
       auto root = get_root_ptr(cxt, coro_id);
-      if (leaf_page_store(cache_addr, k, v, root, 0, cxt, coro_id, true)) {
-
+      auto ret = leaf_page_store(cache_addr, k, v, root, 0, cxt, coro_id, true);
+      if (ret) {
         cache_hit[dsm->getMyThreadID()][0]++;
 
         if (res == HotResult::SUCC) {
           hot_buf.clear(k);
         }
-        return;
+        return ret - 1;
       }
       // cache stale, from root,
       index_cache->invalidate(entry);
@@ -438,11 +439,13 @@ next:
     }
   }
 
-  leaf_page_store(p, k, v, root, 0, cxt, coro_id);
+  auto ret =leaf_page_store(p, k, v, root, 0, cxt, coro_id);
 
   if (res == HotResult::SUCC) {
     hot_buf.clear(k);
   }
+
+  return ret - 1;
 }
 
 bool Tree::search(const Key &k, Value &v, CoroContext *cxt, int coro_id) {
@@ -858,7 +861,10 @@ void Tree::internal_page_store(GlobalAddress page_addr, const Key &k,
   }
 }
 
-bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
+// 0 means insertion fail false
+// 1 means update success
+// 2 means insert success
+int Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
                            const Value &v, GlobalAddress root, int level,
                            CoroContext *cxt, int coro_id, bool from_cache) {
 
@@ -900,7 +906,7 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
     //          page->hdr.highest);
     // }
 
-    return false;
+    return 0;
   }
 
   // if (enter_debug) {
@@ -916,8 +922,8 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
 
     this->leaf_page_store(page->hdr.sibling_ptr, k, v, root, level, cxt,
                           coro_id);
-
-    return true;
+    // TODO: either 1 or 2 is possible 
+    return 1;
   }
   assert(k >= page->hdr.lowest);
 
@@ -960,6 +966,7 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
     cnt++;
   }
 
+  int ret = (update_addr == nullptr) ? 2 : 1;
   bool need_split = cnt == kLeafCardinality;
   if (!need_split) {
     assert(update_addr);
@@ -967,7 +974,7 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
         update_addr, GADD(page_addr, (update_addr - (char *)page)),
         sizeof(LeafEntry), cas_buffer, lock_addr, tag, cxt, coro_id, false);
 
-    return true;
+    return ret;
   } else {
     std::sort(
         page->records, page->records + kLeafCardinality,
@@ -1018,12 +1025,12 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
                         lock_addr, tag, cxt, coro_id, need_split);
 
   if (!need_split)
-    return true;
+    return ret;
 
   if (root == page_addr) { // update root
     if (update_new_root(page_addr, split_key, sibling_addr, level + 1, root,
                         cxt, coro_id)) {
-      return true;
+      return ret;
     }
   }
 
@@ -1037,7 +1044,7 @@ bool Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
     insert_internal(split_key, sibling_addr, cxt, coro_id, level + 1);
   }
 
-  return true;
+  return ret;
 }
 
 // Need BIG FIX
