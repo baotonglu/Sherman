@@ -155,7 +155,8 @@ void thread_run(int id) {
   Timer timer;
   Value *value_buffer = (Value *)malloc(sizeof(Value) * 1024 * 1024);
   size_t counter = 0;
-  while (true) {
+  // Execute 30 Million KV operations
+  while (counter < 30000000) {
     ++counter;
     if(counter % 1000000 == 0){
       tree->index_cache_statistics();
