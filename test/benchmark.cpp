@@ -154,7 +154,12 @@ void thread_run(int id) {
 
   Timer timer;
   Value *value_buffer = (Value *)malloc(sizeof(Value) * 1024 * 1024);
+  size_t counter = 0;
   while (true) {
+    ++counter;
+    if(counter % 1000000 == 0){
+      tree->index_cache_statistics();
+    }
 
     if (need_stop || id >= kTthreadUpper) {
       while (true)
