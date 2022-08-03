@@ -40,6 +40,7 @@ private:
   uint64_t cache_size; // MB;
   std::atomic<int64_t> free_page_cnt;
   std::atomic<int64_t> skiplist_node_cnt;
+  std::atomic<int64_t> skiplist_node_size;
   int64_t all_page_cnt;
 
   // SkipList
@@ -56,7 +57,9 @@ inline IndexCache::IndexCache(int cache_size) : cache_size(cache_size) {
 
   all_page_cnt = memory_size / sizeof(InternalPage);
   free_page_cnt.store(all_page_cnt);
+  std::cout << "all page count = " << all_page_cnt << std::endl;
   skiplist_node_cnt.store(0);
+  skiplist_node_size.store(0);
 }
 
 // [from, to）
@@ -64,7 +67,9 @@ inline bool IndexCache::add_entry(const Key &from, const Key &to,
                                   InternalPage *ptr) {
 
   // TODO memory leak
-  auto buf = skiplist->AllocateKey(sizeof(CacheEntry));
+  size_t node_size = 0;
+  auto buf = skiplist->AllocateKey(sizeof(CacheEntry), &node_size);
+  skiplist_node_size.fetch_add(node_size);
   auto &e = *(CacheEntry *)buf;
   e.from = from;
   e.to = to - 1; // !IMPORTANT;
@@ -251,7 +256,7 @@ inline void IndexCache::evict_one() {
 }
 
 inline void IndexCache::statistics() {
-  printf("[skiplist node: %ld]  [page cache: %ld]\n", skiplist_node_cnt.load(),
+  printf("[skiplist node: %ld] [skiplist size (B) : %lu]  [page cache: %ld]\n", skiplist_node_cnt.load(), skiplist_node_size.load(),
          all_page_cnt - free_page_cnt.load());
 }
 

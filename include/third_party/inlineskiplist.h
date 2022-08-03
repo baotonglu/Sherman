@@ -92,7 +92,7 @@ class InlineSkipList {
   // Allocates a key and a skip-list node, returning a pointer to the key
   // portion of the node.  This method is thread-safe if the allocator
   // is thread-safe.
-  char* AllocateKey(size_t key_size);
+  char* AllocateKey(size_t key_size, size_t *node_size = nullptr);
 
   // Allocate a splice using allocator.
   Splice* AllocateSplice();
@@ -227,7 +227,7 @@ class InlineSkipList {
 
   int RandomHeight();
 
-  Node* AllocateNode(size_t key_size, int height);
+  Node* AllocateNode(size_t key_size, int height, size_t* node_size = nullptr);
 
   bool Equal(const char* a, const char* b) const {
     return (compare_(a, b) == 0);
@@ -621,13 +621,13 @@ InlineSkipList<Comparator>::InlineSkipList(const Comparator cmp,
 }
 
 template <class Comparator>
-char* InlineSkipList<Comparator>::AllocateKey(size_t key_size) {
-  return const_cast<char*>(AllocateNode(key_size, RandomHeight())->Key());
+char* InlineSkipList<Comparator>::AllocateKey(size_t key_size, size_t* node_size) {
+  return const_cast<char*>(AllocateNode(key_size, RandomHeight(), node_size)->Key());
 }
 
 template <class Comparator>
 typename InlineSkipList<Comparator>::Node*
-InlineSkipList<Comparator>::AllocateNode(size_t key_size, int height) {
+InlineSkipList<Comparator>::AllocateNode(size_t key_size, int height, size_t *node_size) {
   auto prefix = sizeof(std::atomic<Node*>) * (height - 1);
 
   // prefix is space for the height - 1 pointers that we store before
@@ -638,6 +638,9 @@ InlineSkipList<Comparator>::AllocateNode(size_t key_size, int height) {
   char* raw = allocator_->AllocateAligned(prefix + sizeof(Node) + key_size);
   Node* x = reinterpret_cast<Node*>(raw + prefix);
 
+  if(node_size != nullptr){
+    *node_size = prefix + sizeof(Node) + key_size;
+  }
   // Once we've linked the node into the skip list we don't actually need
   // to know its height, because we can implicitly use the fact that we
   // traversed into a node at level h to known that h is a valid level

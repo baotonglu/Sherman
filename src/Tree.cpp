@@ -44,9 +44,6 @@ thread_local std::queue<uint16_t> hot_wait_queue;
 thread_local std::priority_queue<CoroDeadline> deadline_queue;
 
 Tree::Tree(DSM *dsm, uint16_t tree_id) : dsm(dsm), tree_id(tree_id) {
-  std::cout << "Leaf node branching factor = " << kInternalCardinality << std::endl;
-  std::cout << "Inernal node branching factor = " << kLeafCardinality << std::endl;
-
   for (int i = 0; i < dsm->getClusterSize(); ++i) {
     local_locks[i] = new LocalLockNode[define::kNumOfLock];
     for (size_t k = 0; k < define::kNumOfLock; ++k) {
