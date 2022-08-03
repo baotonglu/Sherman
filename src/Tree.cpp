@@ -920,10 +920,8 @@ int Tree::leaf_page_store(GlobalAddress page_addr, const Key &k,
 
     assert(page->hdr.sibling_ptr != GlobalAddress::Null());
 
-    this->leaf_page_store(page->hdr.sibling_ptr, k, v, root, level, cxt,
+    return this->leaf_page_store(page->hdr.sibling_ptr, k, v, root, level, cxt,
                           coro_id);
-    // TODO: Fix this one
-    return 1;
   }
   assert(k >= page->hdr.lowest);
 
