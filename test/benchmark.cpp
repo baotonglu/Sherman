@@ -29,7 +29,7 @@ const int kMaxThread = 32;
 int kReadRatio;
 int kThreadCount;
 int kNodeCount;
-uint64_t kKeySpace = 16 * define::MB; // 268 million KV ranges
+uint64_t kKeySpace = 256 * define::MB; // 268 million KV ranges
 double kWarmRatio = 0.8;
 
 double zipfan = 0;
@@ -108,8 +108,8 @@ void thread_run(int id) {
   uint64_t end_warm_key = kWarmRatio * kKeySpace;
   for (uint64_t i = 1; i < end_warm_key; ++i) {
     if (i % all_thread == my_id) {
-      // auto flag = tree->insert(to_key(i), i * 2);
-      auto flag = tree->insert(i, i * 2);
+      auto flag = tree->insert(to_key(i), i * 2);
+      //auto flag = tree->insert(i, i * 2);
       if(flag == 2) total_items.fetch_add(1);
       if(flag == 0) fail_items.fetch_add(1);
     }
