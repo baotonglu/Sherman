@@ -29,7 +29,7 @@ const int kMaxThread = 32;
 int kReadRatio;
 int kThreadCount;
 int kNodeCount;
-uint64_t kKeySpace = 256 * define::MB; // 268 million KV ranges
+uint64_t kKeySpace = 16 * define::MB; // 268 million KV ranges
 double kWarmRatio = 0.8;
 
 double zipfan = 0;
@@ -87,6 +87,7 @@ RequstGen *coro_func(int coro_id, DSM *dsm, int id) {
 Timer bench_timer;
 std::atomic<int64_t> warmup_cnt{0};
 std::atomic<uint64_t> total_items{0};
+std::atomic<uint64_t> fail_items{0};
 std::atomic_bool ready{false};
 void thread_run(int id) {
 
@@ -109,7 +110,8 @@ void thread_run(int id) {
     if (i % all_thread == my_id) {
       // auto flag = tree->insert(to_key(i), i * 2);
       auto flag = tree->insert(i, i * 2);
-      if(flag) total_items.fetch_add(1);
+      if(flag == 2) total_items.fetch_add(1);
+      if(flag == 0) fail_items.fetch_add(1);
     }
   }
 
@@ -124,6 +126,7 @@ void thread_run(int id) {
     uint64_t ns = bench_timer.end();
     printf("warmup time %lds\n", ns / 1000 / 1000 / 1000);
     printf("total accessed items = %lu\n", total_items.load());
+    printf("fail accessed items = %lu\n", fail_items.load());
 
     tree->index_cache_statistics();
     tree->clear_statistics();
@@ -266,7 +269,8 @@ int main(int argc, char *argv[]) {
     // 1.024 million KVs
     for (uint64_t i = 1; i < 1024000; ++i) {
       auto flag = tree->insert(to_key(i), i * 2);
-      if(flag) total_items.fetch_add(1);
+      if(flag == 2) total_items.fetch_add(1);
+      if(flag == 0) fail_items.fetch_add(1);
     }
   }
 #endif

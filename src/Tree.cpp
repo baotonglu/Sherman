@@ -44,6 +44,8 @@ thread_local std::queue<uint16_t> hot_wait_queue;
 thread_local std::priority_queue<CoroDeadline> deadline_queue;
 
 Tree::Tree(DSM *dsm, uint16_t tree_id) : dsm(dsm), tree_id(tree_id) {
+  std::cout << "Leaf node branching factor = " << kInternalCardinality << std::endl;
+  std::cout << "Inernal node branching factor = " << kLeafCardinality << std::endl;
 
   for (int i = 0; i < dsm->getClusterSize(); ++i) {
     local_locks[i] = new LocalLockNode[define::kNumOfLock];
@@ -373,8 +375,8 @@ next:
   internal_page_store(p, k, v, root, level, cxt, coro_id);
 }
 
-// false means update, true means real insert
-bool Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
+// 0 means insertion fail, 1 means update, 2 means real insert
+int Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
   assert(dsm->is_register());
 
   before_operation(cxt, coro_id);
@@ -404,7 +406,7 @@ bool Tree::insert(const Key &k, const Value &v, CoroContext *cxt, int coro_id) {
         if (res == HotResult::SUCC) {
           hot_buf.clear(k);
         }
-        return ret - 1;
+        return ret;
       }
       // cache stale, from root,
       index_cache->invalidate(entry);
@@ -445,7 +447,7 @@ next:
     hot_buf.clear(k);
   }
 
-  return ret - 1;
+  return ret;
 }
 
 bool Tree::search(const Key &k, Value &v, CoroContext *cxt, int coro_id) {
