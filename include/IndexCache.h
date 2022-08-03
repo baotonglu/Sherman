@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <vector>
+#include <mutex>
 
 extern bool enter_debug;
 
@@ -42,7 +43,7 @@ private:
   std::atomic<int64_t> skiplist_node_cnt;
   std::atomic<int64_t> skiplist_node_size;
   int64_t all_page_cnt;
-
+  std::mutex mutex_pool[1000];
   // SkipList
   CacheSkipList *skiplist;
   CacheEntryComparator cmp;
@@ -57,7 +58,6 @@ inline IndexCache::IndexCache(int cache_size) : cache_size(cache_size) {
 
   all_page_cnt = memory_size / sizeof(InternalPage);
   free_page_cnt.store(all_page_cnt);
-  std::cout << "all page count = " << all_page_cnt << std::endl;
   skiplist_node_cnt.store(0);
   skiplist_node_size.store(0);
 }
@@ -143,11 +143,13 @@ inline bool IndexCache::add_to_cache(InternalPage *page) {
 inline const CacheEntry *IndexCache::search_from_cache(const Key &k,
                                                        GlobalAddress *addr) {
   auto entry = find_entry(k);
-
+  // the entry->ptr here should be an atomic variable.
   InternalPage *page = entry ? entry->ptr : nullptr;
 
-  if (page && entry->from <= k && entry->to >= k) {
-
+  if (page && entry->from <= k && entry->to >= k) {// this track will definitely happen
+      std::unique_lock<std::mutex> lck(mutex_pool[(uint64_t)(page)%1000]);
+      if (entry->ptr != page)
+          return nullptr;
     // if (enter_debug) {
     //   page->verbose_debug();
     // }
@@ -168,6 +170,7 @@ inline const CacheEntry *IndexCache::search_from_cache(const Key &k,
         }
       }
       if (!find) {
+          // addr is the target leaf node that may contain the key.
         *addr = page->records[cnt - 1].ptr;
       }
     }
@@ -213,8 +216,14 @@ inline bool IndexCache::invalidate(const CacheEntry *entry) {
   }
 
   if (__sync_bool_compare_and_swap(&(entry->ptr), ptr, 0)) {
+      std::unique_lock<std::mutex> lk(mutex_pool[(uint64_t)(ptr)%1000]);
     free(ptr);
-    free_page_cnt.fetch_add(1);
+//    free_page_cnt.fetch_add(1);
+      if (free_page_cnt.fetch_add(1)%100000 == 0){
+          printf("Cache is still invalidated\n");
+          statistics();
+      }
+
     return true;
   }
 
