@@ -256,8 +256,8 @@ inline void IndexCache::evict_one() {
 }
 
 inline void IndexCache::statistics() {
-  printf("[skiplist node: %ld] [skiplist size (B) : %lu]  [page cache: %ld]\n", skiplist_node_cnt.load(), skiplist_node_size.load(),
-         all_page_cnt - free_page_cnt.load());
+  printf("[skiplist node: %ld] [skiplist size (MB) : %lu] [page cache: %ld] [page cache size (MB): %lu]\n", skiplist_node_cnt.load(), skiplist_node_size.load() / define::MB,
+         all_page_cnt - free_page_cnt.load(), (all_page_cnt - free_page_cnt.load()) * sizeof(InternalPage) / define::MB);
 }
 
 inline void IndexCache::bench() {
