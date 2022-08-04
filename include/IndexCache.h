@@ -220,7 +220,7 @@ inline bool IndexCache::invalidate(const CacheEntry *entry) {
     free(ptr);
 //    free_page_cnt.fetch_add(1);
       if (free_page_cnt.fetch_add(1)%100000 == 0){
-          printf("Cache is still invalidated\n");
+          //printf("Cache is still invalidated\n");
           statistics();
       }
 

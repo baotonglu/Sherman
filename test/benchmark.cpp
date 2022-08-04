@@ -155,8 +155,8 @@ void thread_run(int id) {
   Timer timer;
   Value *value_buffer = (Value *)malloc(sizeof(Value) * 1024 * 1024);
   size_t counter = 0;
-  // Execute 30 Million KV operations
-  while (counter < 30000000) {
+  // Execute 40 Million KV operations
+  while (counter < 40000000) {
     ++counter;
     if(counter % 1000000 == 0){
       tree->index_cache_statistics();
@@ -302,6 +302,7 @@ int main(int argc, char *argv[]) {
   int count = 0;
 
   clock_gettime(CLOCK_REALTIME, &s);
+  bool start_generate_throughput = false;
   while (true) {
 
     sleep(2);
@@ -381,10 +382,15 @@ int main(int argc, char *argv[]) {
 
     if (dsm->getMyNodeID() == 0) {
       printf("cluster throughput %.3f\n", cluster_tp / 1000.0);
-
       // printf("WE %.3f HO %.3f\n", cluster_we * 1000000ull / 1.0 /
       // microseconds,
       //        cluster_ho * 1000000ull / 1.0 / microseconds);
+
+      if(cluster_tp != 0){
+        start_generate_throughput = true;
+      }
+
+      if(start_generate_throughput && cluster_tp == 0) break;
 
       printf("cache hit rate: %lf\n", hit * 1.0 / all);
       // printf("ACCESS PATTERN");
@@ -399,6 +405,10 @@ int main(int argc, char *argv[]) {
       // hot_count,
       //        hier_count, ho_count);
     }
+  }
+
+  for (int i = 0; i < kThreadCount; i++) {
+    th[i].join();
   }
 
   return 0;
