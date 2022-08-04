@@ -158,9 +158,9 @@ void thread_run(int id) {
   // Execute 40 Million KV operations
   while (counter < 40000000) {
     ++counter;
-    if(counter % 1000000 == 0){
-      tree->index_cache_statistics();
-    }
+    // if(counter % 1000000 == 0){
+    //   tree->index_cache_statistics();
+    // }
 
     if (need_stop || id >= kTthreadUpper) {
       while (true)
