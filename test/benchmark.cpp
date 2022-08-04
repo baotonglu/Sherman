@@ -303,6 +303,8 @@ int main(int argc, char *argv[]) {
 
   clock_gettime(CLOCK_REALTIME, &s);
   bool start_generate_throughput = false;
+  double collect_throughput = 0;
+  uint64_t collect_times = 0;
   while (true) {
 
     sleep(2);
@@ -392,6 +394,11 @@ int main(int argc, char *argv[]) {
 
       if(start_generate_throughput && cluster_tp == 0) break;
 
+      if(start_generate_throughput){
+        ++collect_times;
+        collect_throughput += cluster_tp / 1000.0;
+      }
+
       printf("cache hit rate: %lf\n", hit * 1.0 / all);
       // printf("ACCESS PATTERN");
       // for (int i = 0; i < 8; ++i) {
@@ -409,6 +416,12 @@ int main(int argc, char *argv[]) {
 
   for (int i = 0; i < kThreadCount; i++) {
     th[i].join();
+  }
+
+  if (dsm->getMyNodeID() == 0) {
+    std::cout << "------------------------------------------" << std::endl;
+    std::cout << "Average throught = " << collect_throughput / collect_times << std::endl;
+    std::cout << "------------------------------------------" << std::endl;
   }
 
   return 0;
