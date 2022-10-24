@@ -32,7 +32,7 @@ int kNodeCount;
 uint64_t kKeySpace = 128 * define::MB; // 268 million KV ranges
 double kWarmRatio = 0.8;
 
-double zipfan = 0;
+double zipfan = 0.99;
 
 std::thread th[kMaxThread];
 uint64_t tp[kMaxThread][8];
