@@ -29,7 +29,7 @@ const int kMaxThread = 32;
 int kReadRatio;
 int kThreadCount;
 int kNodeCount;
-uint64_t kKeySpace = 64 * define::MB; // 268 million KV ranges
+uint64_t kKeySpace = 128 * define::MB; // 268 million KV ranges
 double kWarmRatio = 0.8;
 
 double zipfan = 0;
